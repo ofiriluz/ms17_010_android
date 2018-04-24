@@ -12,17 +12,16 @@ from kivy.logger import Logger
 class ControlLayout(GridLayout):
     def on_scan_cb(self, instance):
         Logger.fatal("Inside Callback")
+        l = ['127.0.0.' + str(i) for i in range(10)]
+        self.ip_list.add_ips(l)
 
     def __init__(self, **kwargs):
         Logger.fatal("THIS IS THE BEGINNING")
         self.ip_list = IPList(size_hint_y=0.8)
-        self.ip_list.add_ip("127.0.0.1")
         self.scan_button = Button(text="Scan", size_hint_y=0.2)
-        self.scan_button.bind(state=self.on_scan_cb)
+        self.scan_button.bind(on_press=self.on_scan_cb)
         kwargs['cols'] = 1
         kwargs['size_hint'] = (1.0, 1.0)
-        # kwargs['row_force_default'] = True
-        # kwargs['row_default_height'] = 40
 
         super(ControlLayout, self).__init__(**kwargs)
 
