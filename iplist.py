@@ -27,6 +27,11 @@ class IPList(ListView):
             self.list_adapter.data.extend(ips)
             self.populate()
 
+    def set_ips(self, ips):
+        if isinstance(ips, list):
+            self.list_adapter.data = ips
+            self.populate()
+
     def remove_ip(self, ip):
         if self.list_adapter.data.index(ip) != -1:
             Logger.fatal("Removing IP = " + ip)
