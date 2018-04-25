@@ -10,6 +10,7 @@ from kivy.logger import Logger
 from subnet_scanner import SubnetScanner
 import socket
 import sys
+import traceback
 
 
 class ScannerLayout(GridLayout):
@@ -19,16 +20,24 @@ class ScannerLayout(GridLayout):
         if not my_ip:
             Logger.fatal('Cannot init scanner, failed to find IP, aborting')
             sys.exit(1)
-        self.scanner = SubnetScanner(my_ip, start_sub=self.on_scan_started, update_sub=self.on_scan_update, finish_sub=self.on_scan_finished)
-        self.ip_list = IPList(size_hint_y=0.8)
-        self.scan_button = Button(text="Scan", size_hint_y=0.2)
+        self.scanner = SubnetScanner(my_ip,
+                                     nthreads=20,
+                                     start_sub=self.on_scan_started,
+                                     update_sub=self.on_scan_update,
+                                     finish_sub=self.on_scan_finished)
+        self.ip_list = IPList(size_hint_y=0.7)
+        self.scan_button = Button(text="Scan", size_hint_y=0.15)
         self.scan_button.bind(on_press=self.on_scan_button_cb)
+        self.attack_button = Button(text='Attack', size_hint_y=0.15)
+        self.attack_button.bind(on_press=self.on_attack_button_cb)
+        self.attack_button.disabled = True
         kwargs['cols'] = 1
         kwargs['size_hint'] = (1.0, 1.0)
 
         super(ScannerLayout, self).__init__(**kwargs)
 
         self.add_widget(self.scan_button)
+        self.add_widget(self.attack_button)
         self.add_widget(self.ip_list)
 
     def __get_ip(self):
@@ -43,6 +52,10 @@ class ScannerLayout(GridLayout):
             Logger.fatal(str(e))
         return None
 
+    def on_attack_button_cb(self, instance):
+        selected_ip = str(self.ip_list.list_adapter.selection[0]).split('-')[0].strip()
+        Logger.info('Selected IP to attack = ' + selected_ip)
+
     def on_scan_button_cb(self, instance):
         Logger.fatal("Starting the scanner")
         self.scanner.start_scan()
@@ -53,11 +66,13 @@ class ScannerLayout(GridLayout):
 
     def on_scan_finished(self):
         Logger.info('Scanner Finish CB')
+        if len(self.scanner.get_scanned_targets()) > 0:
+            self.attack_button.disabled = False
         self.scan_button.disabled = False
 
     def on_scan_update(self):
         Logger.info('Scanner Update CB')
-        self.ip_list.set_ips([t['IP'] for t in self.scanner.get_scanned_targets()])
+        self.ip_list.set_ips([t['IP'] + ' - ' + t['OS'] for t in self.scanner.get_scanned_targets()])
 
 
 class MainApp(App):
@@ -71,6 +86,6 @@ if __name__ == "__main__":
         MainApp().run()
     except Exception, e:
         Logger.fatal(e.message)
-        Logger.fatal(str(e))
+        traceback.print_exc()
         popup = Popup(title='ERROR', content=Label(text=str(e)),auto_dismiss=False)
         popup.open()

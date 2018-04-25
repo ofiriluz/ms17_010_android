@@ -5,6 +5,7 @@ from impacket.dcerpc.v5.rpcrt import DCERPCException
 from struct import pack
 import sys
 from socket import *
+from kivy.logger import Logger
 
 '''
 Script for
@@ -44,9 +45,9 @@ def is_vulnerable(target):
         try:
             conn.login(USERNAME, PASSWORD)
         except smb.SessionError as e:
-            print('Login failed: ' + nt_errors.ERROR_MESSAGES[e.error_code][0])
+            Logger.warn('Login failed: ' + nt_errors.ERROR_MESSAGES[e.error_code][0])
         finally:
-            print('Target OS: ' + conn.get_server_os())
+            Logger.info('Target OS: ' + conn.get_server_os())
 
         tid = conn.tree_connect_andx('\\\\' + target + '\\' + 'IPC$')
         conn.set_default_tid(tid)
@@ -56,32 +57,30 @@ def is_vulnerable(target):
         recvPkt = conn.send_trans(pack('<H', TRANS_PEEK_NMPIPE), maxParameterCount=0xffff, maxDataCount=0x800)
         status = recvPkt.getNTStatus()
         if status == 0xC0000205:  # STATUS_INSUFF_SERVER_RESOURCES
-            print('The target is not patched')
+            Logger.info('The target is not patched')
         else:
-            print('The target is patched')
+            Logger.info('The target is patched')
 
-        print('')
-        print('=== Testing ' + sys.argv[1] + ' ===')
         for pipe_name, pipe_uuid in pipes.items():
             try:
                 dce = conn.get_dce_rpc(pipe_name)
                 dce.connect()
                 try:
                     dce.bind(pipe_uuid, transfer_syntax=NDR64Syntax)
-                    print('{}: Ok (64 bit)'.format(pipe_name))
+                    Logger.info('{}: Ok (64 bit)'.format(pipe_name))
                     is_succ = True
                 except DCERPCException as e:
                     if 'transfer_syntaxes_not_supported' in str(e):
-                        print('{}: Ok (32 bit)'.format(pipe_name))
+                        Logger.info('{}: Ok (32 bit)'.format(pipe_name))
                         is_succ = True
                     else:
-                        print('{}: Ok ({})'.format(pipe_name, str(e)))
+                        Logger.info('{}: Ok ({})'.format(pipe_name, str(e)))
                         is_succ = True
                 dce.disconnect()
             except smb.SessionError as e:
-                print('{}: {}'.format(pipe_name, nt_errors.ERROR_MESSAGES[e.error_code][0]))
+                Logger.warn('{}: {}'.format(pipe_name, nt_errors.ERROR_MESSAGES[e.error_code][0]))
             except smbconnection.SessionError as e:
-                print('{}: {}'.format(pipe_name, nt_errors.ERROR_MESSAGES[e.error][0]))
+                Logger.warn('{}: {}'.format(pipe_name, nt_errors.ERROR_MESSAGES[e.error][0]))
         os = conn.get_server_os()
         conn.disconnect_tree(tid)
         conn.logoff()
