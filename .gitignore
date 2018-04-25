@@ -1,5 +1,4 @@
 .buildozer
 build
-bin
 venv
 .idea

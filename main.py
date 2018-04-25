@@ -8,6 +8,7 @@ from kivy.uix.gridlayout import GridLayout
 from iplist import IPList
 from kivy.logger import Logger
 from subnet_scanner import SubnetScanner
+from zzz_exploit import exploit
 import socket
 import sys
 import traceback
@@ -53,8 +54,12 @@ class ScannerLayout(GridLayout):
         return None
 
     def on_attack_button_cb(self, instance):
-        selected_ip = str(self.ip_list.list_adapter.selection[0]).split('-')[0].strip()
+        selected_ip = str(self.ip_list.list_adapter.selection[0].text).split('-')[0].strip()
         Logger.info('Selected IP to attack = ' + selected_ip)
+        if exploit(selected_ip):
+            Logger.info("Exploit Succ!")
+        else:
+            Logger.warn("Exploit Failure")
 
     def on_scan_button_cb(self, instance):
         Logger.fatal("Starting the scanner")
