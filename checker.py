@@ -1,18 +1,3 @@
-from mysmb import MYSMB
-from impacket import smb, smbconnection, nt_errors
-from impacket.uuid import uuidtup_to_bin
-from impacket.dcerpc.v5.rpcrt import DCERPCException
-from struct import pack
-import sys
-from socket import *
-from kivy.logger import Logger
-
-'''
-Script for
-- check target if MS17-010 is patched or not.
-- find accessible named pipe
-'''
-
 USERNAME = ''
 PASSWORD = ''
 
@@ -57,30 +42,28 @@ def is_vulnerable(target):
         recvPkt = conn.send_trans(pack('<H', TRANS_PEEK_NMPIPE), maxParameterCount=0xffff, maxDataCount=0x800)
         status = recvPkt.getNTStatus()
         if status == 0xC0000205:  # STATUS_INSUFF_SERVER_RESOURCES
-            Logger.info('The target is not patched')
-        else:
-            Logger.info('The target is patched')
+			Logger.info('The target is not patched')
+			for pipe_name, pipe_uuid in pipes.items():
+				try:
+					dce = conn.get_dce_rpc(pipe_name)
+					dce.connect()
+					try:
+						dce.bind(pipe_uuid, transfer_syntax=NDR64Syntax)
+						Logger.info('{}: Ok (64 bit)'.format(pipe_name))
+						is_succ = True
+					except DCERPCException as e:
+						if 'transfer_syntaxes_not_supported' in str(e):
+							Logger.info('{}: Ok (32 bit)'.format(pipe_name))
+							is_succ = True
+						else:
+							Logger.info('{}: Ok ({})'.format(pipe_name, str(e)))
+							is_succ = True
+					dce.disconnect()
+				except smb.SessionError as e:
+					Logger.warn('{}: {}'.format(pipe_name, nt_errors.ERROR_MESSAGES[e.error_code][0]))
+				except smbconnection.SessionError as e:
+					Logger.warn('{}: {}'.format(pipe_name, nt_errors.ERROR_MESSAGES[e.error][0]))
 
-        for pipe_name, pipe_uuid in pipes.items():
-            try:
-                dce = conn.get_dce_rpc(pipe_name)
-                dce.connect()
-                try:
-                    dce.bind(pipe_uuid, transfer_syntax=NDR64Syntax)
-                    Logger.info('{}: Ok (64 bit)'.format(pipe_name))
-                    is_succ = True
-                except DCERPCException as e:
-                    if 'transfer_syntaxes_not_supported' in str(e):
-                        Logger.info('{}: Ok (32 bit)'.format(pipe_name))
-                        is_succ = True
-                    else:
-                        Logger.info('{}: Ok ({})'.format(pipe_name, str(e)))
-                        is_succ = True
-                dce.disconnect()
-            except smb.SessionError as e:
-                Logger.warn('{}: {}'.format(pipe_name, nt_errors.ERROR_MESSAGES[e.error_code][0]))
-            except smbconnection.SessionError as e:
-                Logger.warn('{}: {}'.format(pipe_name, nt_errors.ERROR_MESSAGES[e.error][0]))
         os = conn.get_server_os()
         conn.disconnect_tree(tid)
         conn.logoff()
