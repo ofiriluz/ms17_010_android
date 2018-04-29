@@ -1,31 +1,25 @@
-__version__ = 1.0
-
+from shell_control.shell_control import ShellControl
+from shell_control.shell_control_tools import add_predefined_shell_commands
 from kivy.app import App
 from kivy.uix.button import Button
-from kivy.uix.label import Label
-from kivy.uix.popup import Popup
 from kivy.uix.gridlayout import GridLayout
 from iplist import IPList
 from kivy.logger import Logger
-from ms1710.subnet_scanner import SubnetScanner
-from ms1710.zzz_exploit import exploit
 import socket
 import sys
-import traceback
+from commands.ms1710_scan_shell_command import MS1710SubnetScannerCommand
+from commands.ms1710_reverse_shell_command import MS1710ReverseShellCommand
 
 
 class ScannerLayout(GridLayout):
     def __init__(self, **kwargs):
         Logger.fatal("Init the scanner layout")
-        my_ip = self.__get_ip()
-        if not my_ip:
-            Logger.fatal('Cannot init scanner, failed to find IP, aborting')
-            sys.exit(1)
-        self.scanner = SubnetScanner(my_ip,
-                                     nthreads=20,
-                                     start_sub=self.on_scan_started,
-                                     update_sub=self.on_scan_update,
-                                     finish_sub=self.on_scan_finished)
+        self.shell_control = ShellControl()
+        self.scanner_id = self.shell_control.add_shell_flow_command('MS1710Scanner', 'ms1710_scan', MS1710SubnetScannerCommand(), False)
+        self.revere_shell_id = self.shell_control.add_shell_flow_command('MS1710ReverseShell', 'ms1710_reverse_shell', MS1710ReverseShellCommand(), False)
+        self.shell_control.add_event_listener('scan_started', self.on_scan_started_event)
+        self.shell_control.add_event_listener('scan_update', self.on_scan_update_event)
+        self.shell_control.add_event_listener('scan_finished', self.on_scan_finished_event)
         self.ip_list = IPList(size_hint_y=0.7)
         self.scan_button = Button(text="Scan", size_hint_y=0.15)
         self.scan_button.bind(on_press=self.on_scan_button_cb)
@@ -63,34 +57,29 @@ class ScannerLayout(GridLayout):
 
     def on_scan_button_cb(self, instance):
         Logger.fatal("Starting the scanner")
-        self.scanner.start_scan()
+        my_ip = self.__get_ip()
+        if not my_ip:
+            Logger.fatal('Cannot init scanner, failed to find IP, aborting')
+            return
+        self.shell_control.execute_shell_flow_commannd(self.scanner_id, {'subnet': my_ip, 'nthreads': 20})
         self.scan_button.disabled = True
 
-    def on_scan_started(self):
+    def on_scan_started_event(self, event, event_args):
         Logger.info('Scanner Start CB')
 
-    def on_scan_finished(self):
+    def on_scan_finished_event(self, event, event_args):
         Logger.info('Scanner Finish CB')
         if len(self.scanner.get_scanned_targets()) > 0:
             self.attack_button.disabled = False
         self.scan_button.disabled = False
 
-    def on_scan_update(self):
+    def on_scan_update_event(self, event, event_args):
         Logger.info('Scanner Update CB')
-        self.ip_list.set_ips([t['IP'] + ' - ' + t['OS'] for t in self.scanner.get_scanned_targets()])
+        scanned_ips = event_args['ip_list']
+        self.ip_list.set_ips([t['IP'] + ' - ' + t['OS'] for t in scanned_ips])
 
 
-class MainApp(App):
+class ScannerApp(App):
     def build(self):
         layout = ScannerLayout()
         return layout
-
-
-if __name__ == "__main__":
-    try:
-        MainApp().run()
-    except Exception, e:
-        Logger.fatal(e.message)
-        traceback.print_exc()
-        popup = Popup(title='ERROR', content=Label(text=str(e)),auto_dismiss=False)
-        popup.open()

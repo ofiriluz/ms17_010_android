@@ -12,9 +12,6 @@ class TestCommandJob(ShellControlJob):
     def is_job_running(self):
         return True
 
-    def reset_job(self):
-        return
-
 
 if __name__ == '__main__':
     from shell_control import ShellControl

@@ -1,10 +1,10 @@
 from kivy.logger import Logger
 import threading
 import time
-from checker import is_vulnerable
+from abc import abstractmethod
 
 
-class SubnetScanner:
+class AbstractSubnetScanner:
     def __init__(self, subnet, nthreads=1, start_sub=None, update_sub=None, finish_sub=None):
         self.subnet = subnet
         self.nthreads = nthreads
@@ -17,6 +17,10 @@ class SubnetScanner:
         self.finish_sub = finish_sub
         self.ip_lock = threading.Lock()
         self.update_lock = threading.Lock()
+
+    @abstractmethod
+    def __scan_ip(self, ip):
+        pass
 
     def __create_ip_list(self):
         ip_list = self.subnet.split('.')
@@ -85,14 +89,14 @@ class SubnetScanner:
 
     def __scan_thread(self, ip):
         Logger.info('Running scan on ' + ip)
-        result = is_vulnerable(ip)
-        if result and result['Result']:
-            self.scanned_targets.append({'IP': ip, 'OS': result['OS']})
+        result = self.scan_ip(ip)
+        if result and result['result']:
+            self.scanned_targets.append({'ip': ip, 'result_data': result['result_data']})
             if self.update_sub:
                 self.update_lock.acquire()
                 self.update_sub()
                 self.update_lock.release()
-        Logger.info('Scan finished on ' + ip + ' with result of ' + str(result['Result']))
+        Logger.info('Scan finished on ' + ip + ' with result of ' + str(result['result']))
 
     def start_scan(self):
         if self.is_running_scan:
