@@ -2,3 +2,5 @@
 build
 venv
 .idea
+*.pyc
+bin
