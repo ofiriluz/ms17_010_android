@@ -17,6 +17,7 @@ class AbstractSubnetScanner:
         self.finish_sub = finish_sub
         self.ip_lock = threading.Lock()
         self.update_lock = threading.Lock()
+        self.scan_job_thread = None
 
     @abstractmethod
     def __scan_ip(self, ip):
@@ -68,7 +69,7 @@ class AbstractSubnetScanner:
         try:
             if self.start_sub:
                 self.start_sub()
-            while self.__has_more_jobs():
+            while self.__has_more_jobs() and self.is_running_scan:
                 self.__validate_jobs()
                 if self.__cant_insert_job():
                     time.sleep(1)
@@ -89,7 +90,7 @@ class AbstractSubnetScanner:
 
     def __scan_thread(self, ip):
         Logger.info('Running scan on ' + ip)
-        result = self.scan_ip(ip)
+        result = self.__scan_ip(ip)
         if result and result['result']:
             self.scanned_targets.append({'ip': ip, 'result_data': result['result_data']})
             if self.update_sub:
@@ -105,7 +106,12 @@ class AbstractSubnetScanner:
         self.is_running_scan = True
         self.scanned_targets = []
         self.__create_ip_list()
-        threading.Thread(target=self.__scan_job_thread).start()
+        self.scan_job_thread = threading.Thread(target=self.__scan_job_thread)
+
+    def stop_scan(self):
+        if self.is_running_scan:
+            self.is_running_scan = False
+            self.scan_job_thread.join()
 
     def wait(self):
         while self.__has_more_jobs():

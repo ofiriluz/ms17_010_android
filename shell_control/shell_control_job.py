@@ -5,9 +5,9 @@ class ShellControlJob:
     def __init__(self):
         self.shell_listener = None
 
-    def notify_event(self, event):
+    def notify_event(self, event_name, event_data):
         if self.shell_listener:
-            self.shell_listener(event)
+            self.shell_listener(event_name, event_data)
 
     def set_shell_listener(self, listener):
         self.shell_listener = list
@@ -19,3 +19,8 @@ class ShellControlJob:
     @abstractmethod
     def is_job_running(self):
         pass
+
+    @abstractmethod
+    def cancel_job(self):
+        pass
+

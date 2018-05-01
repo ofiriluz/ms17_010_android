@@ -35,7 +35,6 @@ class ShellControl:
 
         # Only outputs for now
         formatted_msg = '[%s][%s][%s][%s]: %s' % (str(datetime.datetime.now()), job['job_name'], stream.get_stream_name(), msg_type, msg_data)
-        # print('[%s][%s][%s][%s]: %s' % (str(datetime.datetime.now()), job['job_name'], stream.get_stream_name(), msg_type, msg_data))
 
         # Send job message stream event
         self.__on_event_notified('job_stream_message',{'job_id': job['job_id'],
@@ -102,7 +101,7 @@ class ShellControl:
 
         self.flow_commands[raw_flow_command['job_id']] = raw_flow_command
 
-        return generated_command_uuid
+        return raw_flow_command['job_id']
 
     def get_shell_flow_commands(self):
         return self.flow_commands
