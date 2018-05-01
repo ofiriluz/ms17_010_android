@@ -34,12 +34,22 @@ class ShellControl:
         msg_type = msg['type']
 
         # Only outputs for now
-        print('[%s][%s][%s][%s]: %s' % (str(datetime.datetime.now()), job['job_name'], stream.get_stream_name(), msg_type, msg_data))
+        formatted_msg = '[%s][%s][%s][%s]: %s' % (str(datetime.datetime.now()), job['job_name'], stream.get_stream_name(), msg_type, msg_data)
+        # print('[%s][%s][%s][%s]: %s' % (str(datetime.datetime.now()), job['job_name'], stream.get_stream_name(), msg_type, msg_data))
+
+        # Send job message stream event
+        self.__on_event_notified('job_stream_message',{'job_id': job['job_id'],
+                                                       'raw_message': msg,
+                                                       'formatted_message': formatted_msg,
+                                                       'message_type': msg_type})
 
     def __flow_job_runner(self, job_id, job, args):
         # Create streams
         job_log_stream = ShellControlStream('DataStream', job, self.__flow_job_stream_notifier)
         job_log_stream.start_stream()
+
+        # Send a start event
+        self.__on_event_notified('job_started', {'job_id': job_id})
 
         # For now only executes the job
         job_result = job['command_flow_handler'].execute_job(args, job_log_stream)
@@ -51,6 +61,9 @@ class ShellControl:
         job_log_stream.end_stream()
 
         self.flow_command_jobs_results[job_id] = {'result': job_result, 'history': job_log_stream.get_stream_history()}
+
+        # Send a finish event
+        self.__on_event_notified('job_finishied', {'job_id': job_id})
 
     def __flow_job_cleaner_thread(self):
         jobs_to_remove = []
@@ -77,10 +90,9 @@ class ShellControl:
             'job_name': job_name,
             'command_name': command_name,
             'command_flow_handler': command_handler,
-            'is_async': is_async
+            'is_async': is_async,
+            'job_id': uuid.uuid4()
         }
-
-        generated_command_uuid = uuid.uuid4()
 
         if not raw_flow_command['command_flow_handler']:
             # Logger.error('Could not add shell flow command %s, no handler' % job_name)
@@ -88,7 +100,7 @@ class ShellControl:
 
         raw_flow_command['command_flow_handler'].set_shell_listener(self.__on_event_notified)
 
-        self.flow_commands[generated_command_uuid] = raw_flow_command
+        self.flow_commands[raw_flow_command['job_id']] = raw_flow_command
 
         return generated_command_uuid
 
