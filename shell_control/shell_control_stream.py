@@ -3,10 +3,11 @@ import threading
 
 
 class ShellControlStream:
-    def __init__(self, stream_name, job, stream_notifier):
+    def __init__(self, stream_name, command, job_id, stream_notifier):
         self.msgs = []
         self.msgs_history = []
-        self.job = job
+        self.command = command
+        self.job_id = job_id
         self.stream_name = stream_name
         self.stream_job_runner = threading.Thread(target=self.__stream_thread)
         self.stream_job_killer = threading.Event()
@@ -51,7 +52,7 @@ class ShellControlStream:
             time.sleep(0.25)
             if self.__has_more_msgs() and self.stream_notifier:
                 msg = self.__read_next_msg()
-                self.stream_notifier(self, msg, self.job)
+                self.stream_notifier(self, msg, self.command['command_id'], self.job_id)
 
     def __add_msg(self, msg, type):
         self.stream_lock.acquire()

@@ -21,24 +21,27 @@ class MS1710Listener:
         return self.commands_queue.popleft()
 
     def __listener_thread(self):
-        self.socket.listen(1)
-        conn, addr = s.accept()
+        try:
+            self.socket.listen(1)
+            conn, addr = self.socket.accept()
 
-        while self.is_listener_running:
-            try:
-                data = conn.recv(1024)
-                if not data:
+            while self.is_listener_running:
+                try:
+                    data = conn.recv(1024)
+                    if not data:
+                        break
+                    if self.data_callback:
+                        self.data_callback(data)
+                    if str(data).endswith(">") and self.__has_commands_to_execute():
+                        command = self.__get_next_command()
+                        conn.sendall(command + '\n')
+                except socket.error:
+                    print "Error Occured."
                     break
-                if self.data_callback:
-                    self.data_callback(data)
-                if str(data).endswith(">") and self.__has_commands_to_execute():
-                    command = self.__get_next_command()
-                    conn.sendall(command + '\n')
-            except socket.error:
-                print "Error Occured."
-                break
-        conn.close()
-        self.is_listener_running = False
+            conn.close()
+            self.is_listener_running = False
+        except:
+            pass
 
     def add_command_to_queue(self, command):
         self.commands_queue.append(command)
@@ -51,6 +54,7 @@ class MS1710Listener:
             return
 
         self.is_listener_running = True
+        self.socket.close()
         self.listener_thread.start()
 
     def stop_listen(self):

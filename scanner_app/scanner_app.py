@@ -1,12 +1,9 @@
 from shell_control.shell_control import ShellControl
-from shell_control.shell_control_tools import add_predefined_shell_commands
 from kivy.app import App
 from kivy.uix.button import Button
 from kivy.uix.gridlayout import GridLayout
 from iplist import IPList
 from kivy.logger import Logger
-import socket
-import sys
 from commands.ms1710_scan_shell_command import MS1710SubnetScannerCommand
 from commands.ms1710_reverse_shell_command import MS1710ReverseShellCommand
 
@@ -15,11 +12,12 @@ class ScannerLayout(GridLayout):
     def __init__(self, **kwargs):
         Logger.fatal("Init the scanner layout")
         self.shell_control = ShellControl()
-        self.scanner_id = self.shell_control.add_shell_flow_command('MS1710Scanner', 'ms1710_scan', MS1710SubnetScannerCommand(), False)
-        self.revere_shell_id = self.shell_control.add_shell_flow_command('MS1710ReverseShell', 'ms1710_reverse_shell', MS1710ReverseShellCommand(), False)
-        self.shell_control.add_event_listener('scan_started', self.on_scan_started_event)
-        self.shell_control.add_event_listener('scan_update', self.on_scan_update_event)
-        self.shell_control.add_event_listener('scan_finished', self.on_scan_finished_event)
+        self.scanner_id = self.shell_control.add_shell_flow_command('MS1710Scanner', 'ms1710_scan', MS1710SubnetScannerCommand, False)
+        self.revere_shell_id = self.shell_control.add_shell_flow_command('MS1710ReverseShell', 'ms1710_reverse_shell', MS1710ReverseShellCommand, False)
+
+        self.shell_control.add_event_listener(self.scanner_id, 'scan_started', self.on_scan_started_event)
+        self.shell_control.add_event_listener(self.scanner_id, 'scan_update', self.on_scan_update_event)
+        self.shell_control.add_event_listener(self.scanner_id, 'scan_finished', self.on_scan_finished_event)
         self.ip_list = IPList(size_hint_y=0.7)
         self.scan_button = Button(text="Scan", size_hint_y=0.15)
         self.scan_button.bind(on_press=self.on_scan_button_cb)
@@ -34,18 +32,6 @@ class ScannerLayout(GridLayout):
         self.add_widget(self.scan_button)
         self.add_widget(self.attack_button)
         self.add_widget(self.ip_list)
-
-    def __get_ip(self):
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect(("8.8.8.8", 80))
-            ip = s.getsockname()[0]
-            Logger.info('My IP = ' + ip)
-            s.close()
-            return ip
-        except Exception, e:
-            Logger.fatal(str(e))
-        return None
 
     def on_attack_button_cb(self, instance):
         selected_ip = str(self.ip_list.list_adapter.selection[0].text).split('-')[0].strip()
