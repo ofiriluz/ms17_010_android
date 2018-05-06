@@ -38,7 +38,7 @@ class MS1710SubnetChecker(AbstractSubnetScanner):
     def __init__(self, **kwargs):
         super(MS1710SubnetChecker, self).__init__(**kwargs)
 
-    def __scan_ip(self, ip):
+    def _Base_scan_ip(self, ip):
         return self.__is_vulnerable(ip)
 
     def __is_vulnerable(self, target):

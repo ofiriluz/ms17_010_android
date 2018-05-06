@@ -1,10 +1,12 @@
 from kivy.logger import Logger
 import threading
 import time
-from abc import abstractmethod
+from abc import abstractmethod, ABCMeta
 
 
-class AbstractSubnetScanner:
+class AbstractSubnetScanner(object):
+    __metaclass__ = ABCMeta
+
     def __init__(self, subnet, nthreads=1, start_sub=None, update_sub=None, finish_sub=None):
         self.subnet = subnet
         self.nthreads = nthreads
@@ -20,7 +22,7 @@ class AbstractSubnetScanner:
         self.scan_job_thread = None
 
     @abstractmethod
-    def __scan_ip(self, ip):
+    def _Base_scan_ip(self, ip):
         pass
 
     def __create_ip_list(self):
@@ -90,7 +92,7 @@ class AbstractSubnetScanner:
 
     def __scan_thread(self, ip):
         Logger.info('Running scan on ' + ip)
-        result = self.__scan_ip(ip)
+        result = self._Base_scan_ip(ip)
         if result and result['result']:
             self.scanned_targets.append({'ip': ip, 'result_data': result['result_data']})
             if self.update_sub:
@@ -107,6 +109,7 @@ class AbstractSubnetScanner:
         self.scanned_targets = []
         self.__create_ip_list()
         self.scan_job_thread = threading.Thread(target=self.__scan_job_thread)
+        self.scan_job_thread.start()
 
     def stop_scan(self):
         if self.is_running_scan:

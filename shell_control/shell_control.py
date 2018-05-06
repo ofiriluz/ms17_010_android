@@ -7,7 +7,7 @@ from shell_control_job import ShellControlJob
 
 
 class ShellControl:
-    def __init__(self):
+    def __init__(self, allow_stdout_log=True):
         self.flow_commands = {}
         self.flow_command_jobs = {}
         self.flow_command_jobs_results = {}
@@ -15,6 +15,7 @@ class ShellControl:
         self.flow_cleaner_job = threading.Thread(target=self.__flow_job_cleaner_thread)
         self.flow_cleaner_exit_event = threading.Event()
         self.flow_control_events_listeners = {}
+        self.allow_stdout_log = allow_stdout_log
 
     def __enter__(self):
         self.flow_cleaner_job.start()
@@ -29,6 +30,10 @@ class ShellControl:
             for listener in self.flow_control_events_listeners[event_name]:
                 listener(event_name, event_args)
 
+    def __print_log_message(self, msg, type):
+        # TODO
+        print(msg)
+
     def __flow_job_stream_notifier(self, stream, msg, job):
         msg_data = msg['msg']
         msg_type = msg['type']
@@ -36,11 +41,14 @@ class ShellControl:
         # Only outputs for now
         formatted_msg = '[%s][%s][%s][%s]: %s' % (str(datetime.datetime.now()), job['job_name'], stream.get_stream_name(), msg_type, msg_data)
 
+        if self.allow_stdout_log:
+            self.__print_log_message(formatted_msg, msg_type)
+
         # Send job message stream event
-        self.__on_event_notified('job_stream_message',{'job_id': job['job_id'],
-                                                       'raw_message': msg,
-                                                       'formatted_message': formatted_msg,
-                                                       'message_type': msg_type})
+        self.__on_event_notified('job_stream_message', {'job_id': job['job_id'],
+                                                        'raw_message': msg,
+                                                        'formatted_message': formatted_msg,
+                                                        'message_type': msg_type})
 
     def __flow_job_runner(self, job_id, job, args):
         # Create streams
@@ -110,7 +118,7 @@ class ShellControl:
         if id in self.flow_commands.keys():
             del self.flow_commands[id]
 
-    def execute_shell_flow_commannd(self, id, flow_command_args):
+    def execute_shell_flow_commannd(self, id, flow_command_args=None):
         if id in self.flow_commands.keys():
             flow_command = self.flow_commands[id]
             if flow_command['is_async']:
@@ -121,6 +129,8 @@ class ShellControl:
                 self.flow_command_jobs[job_id] =  flow_job
                 self.flow_command_jobs_lock.release()
                 return job_id
+            else:
+                self.__flow_job_runner(id, flow_command, flow_command_args)
         return None
 
     def wait_for_shell_job_to_end(self, job_id):

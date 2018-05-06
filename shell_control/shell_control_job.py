@@ -10,7 +10,7 @@ class ShellControlJob:
             self.shell_listener(event_name, event_data)
 
     def set_shell_listener(self, listener):
-        self.shell_listener = list
+        self.shell_listener = listener
 
     @abstractmethod
     def execute_job(self, command_args, log_stream):
