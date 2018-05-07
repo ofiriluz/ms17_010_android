@@ -2,7 +2,7 @@ from shell_control.shell_control import ShellControl
 from kivy.app import App
 from kivy.uix.button import Button
 from kivy.uix.gridlayout import GridLayout
-from iplist import IPList
+from widgets.iplist import IPList
 from kivy.logger import Logger
 from commands.ms1710_scan_shell_command import MS1710SubnetScannerCommand
 from commands.ms1710_reverse_shell_command import MS1710ReverseShellCommand
@@ -10,7 +10,6 @@ from commands.ms1710_reverse_shell_command import MS1710ReverseShellCommand
 
 class ScannerLayout(GridLayout):
     def __init__(self, **kwargs):
-        Logger.fatal("Init the scanner layout")
         self.shell_control = ShellControl()
         self.scanner_id = self.shell_control.add_shell_flow_command('MS1710Scanner', 'ms1710_scan', MS1710SubnetScannerCommand, False)
         self.revere_shell_id = self.shell_control.add_shell_flow_command('MS1710ReverseShell', 'ms1710_reverse_shell', MS1710ReverseShellCommand, False)
@@ -69,3 +68,4 @@ class ScannerApp(App):
     def build(self):
         layout = ScannerLayout()
         return layout
+
