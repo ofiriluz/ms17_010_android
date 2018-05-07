@@ -23,12 +23,11 @@ class ShellTextInput(TextInput):
 
     def keyboard_on_key_down(self, window, keycode, text, modifiers):
         super(ShellTextInput, self).keyboard_on_key_down(window, keycode, text, modifiers)
-        Logger.info(str(keycode))
-        if keycode[1] == 'return' or keycode[1] == 'enter':
+        if keycode[1] == 'enter':
             cmd = str(self.text)
             self.text = ''
             if self.cb:
-                self.cb(cmd)
+                self.cb(cmd.strip())
 
 
 class ShellLayout(GridLayout):
@@ -37,8 +36,8 @@ class ShellLayout(GridLayout):
         self.command_input = ShellTextInput(hint_text='Write cmd here', size_hint_x=1.0, size_hint_y=0.05)
         self.command_input.bind(focus=self.__on_input_focus)
         # self.send_command_button = Button(size_hint_x=0.3, size_hint_y=0.1, text="S")
-        self.command_input_grid = GridLayout(size_hint_x=1.0, size_hint_y=0.05, cols=1)
-        self.command_input_grid.add_widget(self.command_input)
+        # self.command_input_grid = GridLayout(size_hint_x=1.0, size_hint_y=0.05, cols=1)
+        # self.command_input_grid.add_widget(self.command_input)
         # self.command_input_grid.add_widget(self.send_command_button)
         # self.cb = None
         # self.keyboard = Window.request_keyboard(self.__on_keyboard_close, self)
@@ -49,14 +48,18 @@ class ShellLayout(GridLayout):
         kwargs['size_hint'] = (1.0, 1.0)
         super(ShellLayout, self).__init__(**kwargs)
 
-        self.add_widget(self.command_input_grid)
+        self.add_widget(self.command_input)
         self.add_widget(self.command_output_label)
 
     def __on_input_focus(self, instance, value):
         if value:
-            self.command_output_label.size_hint_y(0.5)
+            self.command_output_label.size_hint_y = 0.5
+            self.command_input.size_hint_y = 0.05
+            self.size_hint_y = 0.55
         else:
-            self.command_output_label.size_hint_y(0.9)
+            self.command_output_label.size_hint_y = 0.9
+            self.command_input.size_hint_y = 0.05
+            self.size_hint_y = 1.0
 
     def add_to_shell_text(self, text):
         self.command_output_label.text = self.command_output_label.text + text + '\n'
@@ -142,7 +145,9 @@ class ScannerLayout(GridLayout):
     def on_scan_update_event(self, command_id, event, event_args):
         Logger.info('Scanner Update CB')
         scanned_ips = event_args['ip_list']
-        self.ip_list.set_ips([t['ip'] + ' - ' + t['result_data']['os'] for t in scanned_ips])
+        if len(scanned_ips) > 0:
+            self.ip_list.set_ips([t['ip'] + ' - ' + t['result_data']['os'] for t in scanned_ips])
+            self.attack_button.disabled = False
 
 
 class ScannerApp(App):
