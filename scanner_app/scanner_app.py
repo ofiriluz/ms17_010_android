@@ -13,43 +13,57 @@ from ip_utils import get_computer_ip
 from kivy.core.window import Window
 
 
+class ShellTextInput(TextInput):
+    def __init__(self, **kwargs):
+        super(ShellTextInput, self).__init__(**kwargs)
+        self.cb = None
+
+    def set_enter_cb(self, cb):
+        self.cb = cb
+
+    def keyboard_on_key_down(self, window, keycode, text, modifiers):
+        super(ShellTextInput, self).keyboard_on_key_down(window, keycode, text, modifiers)
+        Logger.info(str(keycode))
+        if keycode[1] == 'return' or keycode[1] == 'enter':
+            cmd = str(self.text)
+            self.text = ''
+            if self.cb:
+                self.cb(cmd)
+
+
 class ShellLayout(GridLayout):
     def __init__(self, **kwargs):
-        self.command_output_label = ScrollableLabel(size_hint_x=1.0, size_hint_y=0.9)
-        self.command_input = TextInput(hint_text='Write cmd here', size_hint_x=1.0, size_hint_y=0.1)
+        self.command_output_label = ScrollableLabel(size_hint_x=1.0, size_hint_y=0.95)
+        self.command_input = ShellTextInput(hint_text='Write cmd here', size_hint_x=1.0, size_hint_y=0.05)
+        self.command_input.bind(focus=self.__on_input_focus)
         # self.send_command_button = Button(size_hint_x=0.3, size_hint_y=0.1, text="S")
-        self.command_input_grid = GridLayout(size_hint_x=1.0, size_hint_y=0.1, cols=2)
+        self.command_input_grid = GridLayout(size_hint_x=1.0, size_hint_y=0.05, cols=1)
         self.command_input_grid.add_widget(self.command_input)
         # self.command_input_grid.add_widget(self.send_command_button)
-        self.cb = None
-        self.keyboard = Window.request_keyboard(self.__on_keyboard_close, self)
-        self.keyboard.bind(on_key_down=self.__on_keyboard_down)
+        # self.cb = None
+        # self.keyboard = Window.request_keyboard(self.__on_keyboard_close, self)
+        # self.keyboard.bind(on_key_down=self.__on_keyboard_down)
         # self.send_command_button.bind(on_press=self.on_command_button)
 
         kwargs['cols'] = 1
         kwargs['size_hint'] = (1.0, 1.0)
         super(ShellLayout, self).__init__(**kwargs)
 
-        self.add_widget(self.command_output_label)
         self.add_widget(self.command_input_grid)
+        self.add_widget(self.command_output_label)
 
-    def __on_keyboard_close(self):
-        self.keyboard.unbind(on_key_down=self.__on_keyboard_down)
-        self.keyboard = None
-
-    def __on_keyboard_down(self, keyboard, keycode, text, modifiers):
-        Logger.info(str(keycode))
-        if keycode[1] == 'return':
-            cmd = str(self.command_input.text)
-            self.command_input.text = ''
-            if self.cb:
-                self.cb(cmd)
+    def __on_input_focus(self, instance, value):
+        if value:
+            self.command_output_label.size_hint_y(0.5)
+        else:
+            self.command_output_label.size_hint_y(0.9)
 
     def add_to_shell_text(self, text):
         self.command_output_label.text = self.command_output_label.text + text + '\n'
+        self.command_output_label.scroll_y = 0
 
     def set_callback(self,  cb):
-        self.cb = cb
+        self.command_input.set_enter_cb(cb)
 
     # def on_command_button(self, instance):
     #     if self.cb:
