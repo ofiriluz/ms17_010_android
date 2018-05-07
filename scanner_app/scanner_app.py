@@ -6,6 +6,7 @@ from widgets.iplist import IPList
 from kivy.logger import Logger
 from commands.ms1710_scan_shell_command import MS1710SubnetScannerCommand
 from commands.ms1710_reverse_shell_command import MS1710ReverseShellCommand
+from ms1710.zzz_exploit import exploit
 
 
 class ScannerLayout(GridLayout):

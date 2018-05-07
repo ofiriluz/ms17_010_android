@@ -1,4 +1,5 @@
 import socket
+from kivy.logger import Logger
 
 
 def get_computer_ip():
