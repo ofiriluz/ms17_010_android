@@ -1,4 +1,4 @@
-from shell_control.shell_control_job import ShellControlJob
+from shell_control_infra.shell_control_job import ShellControlJob
 import sys
 
 
@@ -18,7 +18,7 @@ class TestCommandJob(ShellControlJob):
 
 
 if __name__ == '__main__':
-    from shell_control.shell_control import ShellControl
+    from shell_control_infra.shell_control import ShellControl
 
     with ShellControl() as shell_control:
         command_id = shell_control.add_shell_flow_command('TestJob', 'Test', TestCommandJob, True)

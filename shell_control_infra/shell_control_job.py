@@ -23,6 +23,10 @@ class ShellControlJob(object):
         pass
 
     @abstractmethod
+    def execute_job_event(self, event):
+        pass
+
+    @abstractmethod
     def is_job_running(self):
         pass
 

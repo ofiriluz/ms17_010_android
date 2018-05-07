@@ -94,7 +94,7 @@ class AbstractSubnetScanner(object):
         Logger.info('Running scan on ' + ip)
         result = self._Base_scan_ip(ip)
         if result and result['result']:
-            self.scanned_targets.append({'ip': ip, 'result_data': result['result_data']})
+            self.scanned_targets.append({'ip': ip, 'result_data': result})
             if self.update_sub:
                 self.update_lock.acquire()
                 self.update_sub()

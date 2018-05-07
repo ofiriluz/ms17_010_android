@@ -1,4 +1,4 @@
-from shell_control.shell_control_job import ShellControlJob
+from shell_control_infra.shell_control_job import ShellControlJob
 from ms1710.subnet_checker import MS1710SubnetChecker
 
 
@@ -40,6 +40,9 @@ class MS1710SubnetScannerCommand(ShellControlJob):
         self.subnet_checker.wait()
         log_stream.debug("Scan Ended")
 
+    def execute_job_event(self, event):
+        pass
+
     def is_job_running(self):
         return self.is_scanner_running
 
@@ -49,10 +52,10 @@ class MS1710SubnetScannerCommand(ShellControlJob):
 
 
 if __name__ == '__main__':
-    from shell_control.shell_control import ShellControl
+    from shell_control_infra.shell_control import ShellControl
     from utils.ip_utils import get_computer_ip
 
     with ShellControl() as shell_control:
         id = shell_control.add_shell_flow_command('MS1710Scan', 'MS1710Scan', MS1710SubnetScannerCommand, False)
         shell_control.execute_shell_flow_commannd(id, {'subnet': get_computer_ip(), 'nthreads': 10})
-        # shell_control.wait_for_shell_job_to_end(job_id)
+        # shell_control_infra.wait_for_shell_job_to_end(job_id)

@@ -2,6 +2,7 @@ import uuid
 import threading
 import datetime
 import time
+from kivy.logger import Logger
 from shell_control_stream import ShellControlStream
 from shell_control_job import ShellControlJob
 
@@ -10,6 +11,7 @@ class ShellControl:
     def __init__(self, allow_stdout_log=True):
         self.flow_commands = {}
         self.flow_command_jobs = {}
+        self.flow_command_job_executors = {}
         self.flow_command_jobs_results = {}
         self.flow_command_jobs_lock = threading.Lock()
         self.flow_cleaner_job = threading.Thread(target=self.__flow_job_cleaner_thread)
@@ -47,7 +49,7 @@ class ShellControl:
 
         # Send job message stream event
         self.__on_event_notified(command_id, 'job_stream_message', {'job_id': job_id,
-                                                                   'raw_message': msg,
+                                                                   'raw_message': msg_data,
                                                                    'formatted_message': formatted_msg,
                                                                    'message_type': msg_type})
 
@@ -62,8 +64,10 @@ class ShellControl:
         # For now only executes the job
         job_executor = command['command_flow_handler'](command['command_id'])
         job_executor.set_shell_listener(self.__on_event_notified)
-        job_result = job_executor.execute_job(args, job_log_stream)
+        self.flow_command_job_executors[job_id] = job_executor
 
+        job_result = job_executor.execute_job(args, job_log_stream)
+        del self.flow_command_job_executors[job_id]
         # Wait for stream to end
         while job_log_stream.is_streaming():
             time.sleep(0.25)
@@ -137,6 +141,15 @@ class ShellControl:
             else:
                 self.__flow_job_runner(flow_command, job_id, flow_command_args)
         return None
+
+    def send_flow_event(self, job_id, event):
+        Logger.info(str(self.flow_command_job_executors))
+        Logger.info(job_id)
+        Logger.info(event)
+        if job_id in self.flow_command_job_executors.keys():
+            Logger.info('IN')
+            job = self.flow_command_job_executors[job_id]
+            job.execute_job_event(event)
 
     def wait_for_shell_job_to_end(self, job_id):
         if job_id in self.flow_command_jobs.keys():

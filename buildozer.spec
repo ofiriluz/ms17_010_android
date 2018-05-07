@@ -1,13 +1,13 @@
 [app]
 
 # (str) Title of your application
-title = test
+title = shell_control
 
 # (str) Package name
-package.name = test
+package.name = ShellControl
 
 # (str) Package domain (needed for android/ios packaging)
-package.domain = org.test
+package.domain = org.shell_control
 
 # (str) Source code where the main.py live
 source.dir = .
@@ -16,7 +16,7 @@ source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,vbs
 
 # (list) List of inclusions using pattern matching
-#source.include_patterns = assets/*,images/*.png
+source.include_patterns = assets/*,images/*.png
 
 # (list) Source files to exclude (let empty to not exclude anything)
 #source.exclude_exts = spec
@@ -28,7 +28,7 @@ source.include_exts = py,png,jpg,kv,atlas,vbs
 #source.exclude_patterns = license,images/*/*.jpg
 
 # (str) Application versioning (method 1)
-version = 0.1
+version = 1.1
 
 # (str) Application versioning (method 2)
 # version.regex = __version__ = ['"](.*)['"]
@@ -114,7 +114,7 @@ android.permissions = INTERNET
 # (bool) If True, then skip trying to update the Android sdk
 # This can be useful to avoid excess Internet downloads or save time
 # when an update is due and you just want to test/build your package
-# android.skip_update = False
+android.skip_update = True
 
 # (str) Android entry point, default is ok for Kivy-based app
 #android.entrypoint = org.renpy.android.PythonActivity
