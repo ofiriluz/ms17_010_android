@@ -36,7 +36,7 @@ version = 1.1
 
 # (list) Application requirements
 # comma seperated e.g. requirements = sqlite3,kivy
-requirements = kivy, impacket, pycrypto, pyasn1
+requirements = kivy, impacket, pycrypto, pyasn1, ipaddress
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes

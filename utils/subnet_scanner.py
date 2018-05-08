@@ -1,17 +1,18 @@
 from kivy.logger import Logger
 import threading
 import time
+import ipaddress
 from abc import abstractmethod, ABCMeta
 
 
 class AbstractSubnetScanner(object):
     __metaclass__ = ABCMeta
 
-    def __init__(self, subnet, nthreads=1, start_sub=None, update_sub=None, finish_sub=None):
+    def __init__(self, subnet, mask=24, nthreads=1, start_sub=None, update_sub=None, finish_sub=None):
         self.subnet = subnet
+        self.mask = mask
         self.nthreads = nthreads
         self.running_jobs = []
-        self.current_subnet_ip = [0, 0, 0, 0]
         self.is_running_scan = False
         self.scanned_targets = []
         self.start_sub = start_sub
@@ -20,35 +21,36 @@ class AbstractSubnetScanner(object):
         self.ip_lock = threading.Lock()
         self.update_lock = threading.Lock()
         self.scan_job_thread = None
+        self.network_generator = None
+        self.network_generator_valid = False
 
     @abstractmethod
     def _Base_scan_ip(self, ip):
         pass
 
-    def __create_ip_list(self):
-        ip_list = self.subnet.split('.')
-        Logger.info(str(ip_list))
-        for i, item in enumerate(ip_list):
-            Logger.info(str(i))
-            Logger.info(str(item))
-            if i > 3:
-                break
-            try:
-                self.current_subnet_ip[i] = int(item)
-                Logger.info(str(self.current_subnet_ip))
-            except Exception, e:
-                Logger.warn(str(e))
-        self.current_subnet_ip[3] = 0
+    def __create_network_generator(self):
+        interface = ipaddress.ip_interface(unicode(self.subnet + '/' + str(self.mask)))
+        self.network_generator = ipaddress.ip_network(interface.network).hosts()
+        self.network_generator_valid = True
 
     def __get_next_ip(self):
+        if not self.network_generator_valid:
+            return None
+
         self.ip_lock.acquire()
-        scanned_ip = '.'.join(str(x) for x in self.current_subnet_ip)
-        self.current_subnet_ip[3] += 1
+        scanned_ip = None
+        try:
+            scanned_ip = self.network_generator.next()
+        except StopIteration, e:
+            self.network_generator_valid = False
         self.ip_lock.release()
-        return scanned_ip
+
+        if scanned_ip:
+            return scanned_ip.exploded
+        return None
 
     def __has_more_jobs(self):
-        return self.current_subnet_ip[3] != 255
+        return self.network_generator_valid
 
     def __cant_insert_job(self):
         return len(self.running_jobs) == self.nthreads
@@ -77,10 +79,11 @@ class AbstractSubnetScanner(object):
                     time.sleep(1)
                     continue
                 ip = self.__get_next_ip()
-                Logger.info('Starting job for = ' + ip)
-                job = threading.Thread(target=self.__scan_thread, args=(ip,))
-                job.start()
-                self.running_jobs.append(job)
+                if ip:
+                    Logger.info('Starting job for = ' + ip)
+                    job = threading.Thread(target=self.__scan_thread, args=(ip,))
+                    job.start()
+                    self.running_jobs.append(job)
 
             # Wait for the remaining jobs to end
             self.__wait_for_jobs_to_end()
@@ -107,7 +110,7 @@ class AbstractSubnetScanner(object):
         Logger.info('Starting scan...')
         self.is_running_scan = True
         self.scanned_targets = []
-        self.__create_ip_list()
+        self.__create_network_generator()
         self.scan_job_thread = threading.Thread(target=self.__scan_job_thread)
         self.scan_job_thread.start()
 

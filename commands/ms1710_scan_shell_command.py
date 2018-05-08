@@ -21,15 +21,16 @@ class MS1710SubnetScannerCommand(ShellControlJob):
         self.notify_event('scan_update', {'ip_list': self.subnet_checker.get_scanned_targets()})
 
     def execute_job(self, command_args, log_stream):
-        if not command_args or not all(elem in ['subnet', 'nthreads'] for elem in command_args.keys()):
+        if not command_args or not all(elem in ['subnet', 'mask', 'nthreads'] for elem in command_args.keys()):
             log_stream.error('Invalid args for job')
             return
 
         self.log_stream = log_stream
         subnet = command_args['subnet']
+        mask = command_args['mask']
         nthreads = command_args['nthreads']
 
-        self.subnet_checker = MS1710SubnetChecker(subnet=subnet, nthreads=nthreads,
+        self.subnet_checker = MS1710SubnetChecker(subnet=subnet, nthreads=nthreads, mask=mask,
                                                   start_sub=self.on_scan_started,
                                                   update_sub=self.on_scan_update,
                                                   finish_sub=self.on_scan_finished)
@@ -57,5 +58,5 @@ if __name__ == '__main__':
 
     with ShellControl() as shell_control:
         id = shell_control.add_shell_flow_command('MS1710Scan', 'MS1710Scan', MS1710SubnetScannerCommand, False)
-        shell_control.execute_shell_flow_commannd(id, {'subnet': get_computer_ip(), 'nthreads': 10})
+        shell_control.execute_shell_flow_commannd(id, {'subnet': get_computer_ip(), 'mask': 16, 'nthreads': 10})
         # shell_control_infra.wait_for_shell_job_to_end(job_id)

@@ -1,6 +1,6 @@
 from ms1710_scan_shell_command import MS1710SubnetScannerCommand
 from ms1710_reverse_shell_command import MS1710ReverseShellCommand
-from shell_control import ShellControl
+from shell_control_infra.shell_control import ShellControl
 from kivy.app import App
 from widgets.scrollable_label import ScrollableLabel
 from kivy.uix.textinput import TextInput
@@ -8,9 +8,10 @@ from kivy.uix.button import Button
 from kivy.uix.gridlayout import GridLayout
 from widgets.iplist import IPList
 from kivy.logger import Logger
-from zzz_exploit import exploit
 from ip_utils import get_computer_ip
 from kivy.core.window import Window
+
+Window.softinput_mode = 'resize'
 
 
 class ShellTextInput(TextInput):
@@ -35,14 +36,6 @@ class ShellLayout(GridLayout):
         self.command_output_label = ScrollableLabel(size_hint_x=1.0, size_hint_y=0.95)
         self.command_input = ShellTextInput(hint_text='Write cmd here', size_hint_x=1.0, size_hint_y=0.05)
         self.command_input.bind(focus=self.__on_input_focus)
-        # self.send_command_button = Button(size_hint_x=0.3, size_hint_y=0.1, text="S")
-        # self.command_input_grid = GridLayout(size_hint_x=1.0, size_hint_y=0.05, cols=1)
-        # self.command_input_grid.add_widget(self.command_input)
-        # self.command_input_grid.add_widget(self.send_command_button)
-        # self.cb = None
-        # self.keyboard = Window.request_keyboard(self.__on_keyboard_close, self)
-        # self.keyboard.bind(on_key_down=self.__on_keyboard_down)
-        # self.send_command_button.bind(on_press=self.on_command_button)
 
         kwargs['cols'] = 1
         kwargs['size_hint'] = (1.0, 1.0)
@@ -67,12 +60,6 @@ class ShellLayout(GridLayout):
 
     def set_callback(self,  cb):
         self.command_input.set_enter_cb(cb)
-
-    # def on_command_button(self, instance):
-    #     if self.cb:
-    #         cmd = str(self.command_input.text)
-    #         self.command_input.text = ''
-    #         self.cb(cmd)
 
 
 class ScannerLayout(GridLayout):
@@ -105,8 +92,6 @@ class ScannerLayout(GridLayout):
         self.add_widget(self.ip_list)
 
     def on_command(self, command):
-        Logger.info('COMMAND')
-        Logger.info(command)
         self.shell_control.send_flow_event(self.shell_id, {'command': command})
 
     def on_listener_data(self, command_id, event, event_args):
@@ -129,7 +114,7 @@ class ScannerLayout(GridLayout):
         if not my_ip:
             Logger.fatal('Cannot init scanner, failed to find IP, aborting')
             return
-        self.shell_control.execute_shell_flow_commannd(self.scanner_id, {'subnet': my_ip, 'nthreads': 100})
+        self.shell_control.execute_shell_flow_commannd(self.scanner_id, {'subnet': my_ip, 'mask': 16, 'nthreads': 100})
         self.scan_button.disabled = True
 
     def on_scan_started_event(self, command_id, event, event_args):
